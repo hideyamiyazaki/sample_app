@@ -8,13 +8,16 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
 
   def new
+    redirect_to(root_path) if signed_in?
     @user = User.new
   end
 
   def create
+    redirect_to(root_path) if signed_in?
     @user = User.new(user_params)
     if @user.save
       sign_in @user
@@ -38,17 +41,18 @@ class UsersController < ApplicationController
   end
 
   def destroy
-    User.find(params[:id]).destroy
-    flash[:success] = "User destroyed."
-    redirect_to users_url
+    user = User.find(params[:id])
+    if current_user? user
+      redirect_to(root_path)
+    else
+      user.destroy
+      flash[:success] = "User destroyed."
+      redirect_to users_url
+    end
   end
 
   def user_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation)
-  end
-
-  def signed_in_user
-    redirect_to signin_url, notice: "Please sign in." unless  signed_in?
   end
 
   def correct_user
